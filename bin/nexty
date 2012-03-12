@@ -21,15 +21,18 @@ rescue ::Nexpose::APIError => e
 end
 
 
-sites = nsc.site_listing || []
-case sites.length
-when 0
-	puts("There are currently no active sites on this NeXpose instance")
-end
+# sites = nsc.site_listing || []
+sites = nsc.find_site_by_name('SCMS') || []
+#case sites.length
+#when 0
+#	puts("There are currently no active sites on this NeXpose instance")
+#end
 
 sites.each do |site|
 	puts("    Site ##{site[:site_id]} '#{site[:name]}' Risk Factor: #{site[:risk_factor]} Risk Score: #{site[:risk_score]}")
 end
+
+
 
 #history= nsc.site_scan_history(51)
 #puts history
