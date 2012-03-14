@@ -1,4 +1,4 @@
 source 'https://rubygems.org'
 
-# Specify your gem's dependencies in nexty.gemspec
-gemspec
+gem "nexpose", :git=>"git@github.com:thesp0nge/nexpose-client.git"
+gem "rainbow"
