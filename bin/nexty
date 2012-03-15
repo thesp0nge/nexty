@@ -3,6 +3,7 @@
 if RUBY_VERSION.split('.')[1] == "8"
 require 'rubygems'
 end
+
 require 'rainbow'
 require 'nexpose'
 require 'nexty'
@@ -13,29 +14,45 @@ conn = Nexty::Connector.new(ARGV[0])
 nsc = conn.nsc
 
 begin 
-  puts "Connecting to #{conn.config["config"]["host"]}:#{conn.config["config"]["port"]}".color(:white)
+  printf "Connecting to #{conn.config["config"]["host"]}:#{conn.config["config"]["port"]} - ".color(:white)
   nsc.login
 rescue ::Nexpose::APIError => e
-	$stderr.puts("Connection failed: #{e.reason}")
+  printf "failed\n".color(:red)
+	$stderr.puts("#{e.reason}")
 	exit(1)
 end
+printf "succeded\n".color(:green)
 
+site_list=Nexty::Sites.load_from_file(ARGV[1])
+site_list_score = 0
 
-# sites = nsc.site_listing || []
-sites = nsc.find_site_by_name('SCMS') || []
-#case sites.length
-#when 0
-#	puts("There are currently no active sites on this NeXpose instance")
-#end
+report = Nexpose::ReportAdHoc.new(nsc, 'report-card', 'csv')
 
-sites.each do |site|
-	puts("    Site ##{site[:site_id]} '#{site[:name]}' Risk Factor: #{site[:risk_factor]} Risk Score: #{site[:risk_score]}")
+site_list.each do |site|
+  sites = nsc.find_site_by_name(site) || []
+  sites.each do |site|
+    scan_history = nsc.site_scan_history(site[:site_id])
+    scan_history.sort! { |a,b| b[:start_time] <=> a[:start_time]}
+    scan_history.take(4).each do |scan|
+      report.addFilter('scan', scan[:scan_id])
+
+      #begin
+      #  file = File.open("#{site[:name]}_#{Time.now.strftime("%Y%m%d%H%M%s")}.csv", "w")
+      #  file.write(report.generate)
+      #  file.close
+      #rescue REXML::ParseException => e
+      #  puts "#{e.message}".color(:red)
+      #end
+    end
+    site_list_score += site[:risk_factor] * site[:risk_score]
+  end
 end
 
+file = File.open("export_#{Time.now.strftime("%Y%m%d%H%M%s")}.csv", "w")
+file.write(report.generate)
+file.close
 
-
-#history= nsc.site_scan_history(51)
-#puts history
-
-stat = nsc.scan_statistics("218")
-puts stat[:vulns]
+puts "Sites overall risk score: #{site_list_score}"
+nsc.logout
+# stat = nsc.scan_statistics("218")
+# puts stat[:vulns]
