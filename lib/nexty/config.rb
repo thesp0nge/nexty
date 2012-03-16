@@ -11,7 +11,7 @@ module Nexty
 
     def read(file)
       if file.nil? or !File.exists?(file)
-        return default
+        return @default
       end
       config = YAML.load_file(file)
 
