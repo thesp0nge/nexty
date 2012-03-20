@@ -4,6 +4,7 @@ if RUBY_VERSION.split('.')[1] == "8"
 require 'rubygems'
 end
 
+require 'time'
 require 'rainbow'
 require 'nexpose'
 require 'nexty'
@@ -23,36 +24,16 @@ rescue ::Nexpose::APIError => e
 end
 printf "succeded\n".color(:green)
 
-site_list=Nexty::Sites.load_from_file(ARGV[1])
-site_list_score = 0
+fn = Nexty::Report.generate_and_save(ARGV[1], nsc)
 
-report = Nexpose::ReportAdHoc.new(nsc, 'report-card', 'csv')
+    #begin
+    #  file = File.open("#{site[:name]}_#{Time.now.strftime("%Y%m%d%H%M%s")}.csv", "w")
+    #  file.write(report.generate)
+    #  file.close
+    #rescue REXML::ParseException => e
+    #  puts "#{e.message}".color(:red)
 
-site_list.each do |site|
-  sites = nsc.find_site_by_name(site) || []
-  sites.each do |site|
-    scan_history = nsc.site_scan_history(site[:site_id])
-    scan_history.sort! { |a,b| b[:start_time] <=> a[:start_time]}
-    scan_history.take(4).each do |scan|
-      report.addFilter('scan', scan[:scan_id])
-
-      #begin
-      #  file = File.open("#{site[:name]}_#{Time.now.strftime("%Y%m%d%H%M%s")}.csv", "w")
-      #  file.write(report.generate)
-      #  file.close
-      #rescue REXML::ParseException => e
-      #  puts "#{e.message}".color(:red)
-      #end
-    end
-    site_list_score += site[:risk_factor] * site[:risk_score]
-  end
-end
-
-file = File.open("export_#{Time.now.strftime("%Y%m%d%H%M%s")}.csv", "w")
-file.write(report.generate)
-file.close
-
-puts "Sites overall risk score: #{site_list_score}"
+puts "Report saved: #{fn}".color(:white)
 nsc.logout
 # stat = nsc.scan_statistics("218")
 # puts stat[:vulns]
