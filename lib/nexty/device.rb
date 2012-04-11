@@ -1,5 +1,3 @@
-require 'nexpose/site'
-
 module Nexty
   class Device
     def self.all(connection)
