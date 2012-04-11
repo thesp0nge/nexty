@@ -8,6 +8,14 @@ require 'time'
 require 'rainbow'
 require 'nexpose'
 require 'nexty'
+require 'getoptlong'
+
+opts = GetoptLong.new(
+  [ '--report', '-r', GetoptLong::REQUIRED_ARGUMENT ],
+  [ '--host', '-H', GetoptLong::REQUIRED_ARGUMENT ]
+)
+
+
 
 trap("INT") { puts '['+'INTERRUPTED'.color(:red)+']'; exit -1 }
 
@@ -19,12 +27,25 @@ begin
   nsc.login
 rescue ::Nexpose::APIError => e
   printf "failed\n".color(:red)
-	$stderr.puts("#{e.reason}")
-	exit(1)
+  $stderr.puts("#{e.reason}")
+  exit(1)
 end
 printf "succeded\n".color(:green)
 
-fn = Nexty::Report.generate_and_save(ARGV[1], nsc)
+opts.each do |opt, arg|
+  case opt
+  when '--report'
+    fn = Nexty::Report.generate_and_save(arg, nsc)
+    puts "Report saved: #{fn}".color(:white)
+  when '--host'
+    dev= Nexty::Device.find_by_address(nsc, arg)
+    if ! dev.nil? 
+      puts "#{dev.address} found @ site #{dev.site_id}. Risk score = #{dev.riskscore} * #{dev.riskfactor}".color(:green)
+    else
+      puts "#{arg} not found".color{:red}
+    end
+  end
+end
 
     #begin
     #  file = File.open("#{site[:name]}_#{Time.now.strftime("%Y%m%d%H%M%s")}.csv", "w")
@@ -33,7 +54,6 @@ fn = Nexty::Report.generate_and_save(ARGV[1], nsc)
     #rescue REXML::ParseException => e
     #  puts "#{e.message}".color(:red)
 
-puts "Report saved: #{fn}".color(:white)
 nsc.logout
 # stat = nsc.scan_statistics("218")
 # puts stat[:vulns]
