@@ -8,7 +8,7 @@ module Nexty
       report = Nexpose::ReportAdHoc.new(nsc, 'basic-vulnerability-check-results', 'csv')
 
       site_list.each do |site|
-        s = nsc.find_site_by_name_2(site) || []
+        s = nsc.find_site_by_name(site) || []
 
         if ! s[:site_id].nil?
           site_config = Nexpose::SiteConfig.new
