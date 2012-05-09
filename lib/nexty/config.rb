@@ -14,5 +14,6 @@ module Nexty
       return config
     end
 
+
   end
 end

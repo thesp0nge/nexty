@@ -15,6 +15,4 @@ Gem::Specification.new do |gem|
   gem.require_paths = ["lib"]
   gem.version       = Nexty::VERSION
 
-  gem.add_dependency("nexpose", ">= 0.0.9")
-  gem.add_dependency("rainbow")
 end
