@@ -19,7 +19,7 @@ opts = GetoptLong.new(
 
 trap("INT") { puts '['+'INTERRUPTED'.color(:red)+']'; exit -1 }
 
-conn = Nexty::Connector.new(ARGV[0])
+conn = Nexty::Connector.new
 nsc = conn.nsc
 
 begin 

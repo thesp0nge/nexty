@@ -3,7 +3,7 @@ module Nexty
   class Connector
     
     attr_reader :nsc, :config
-    def initialize(file)
+    def initialize(file="./conf/config.yaml")
       @config = Nexty::Config.instance.read(file)
       @nsc = Nexpose::Connection.new(@config["config"]["host"], 
                                      @config["config"]["user"],
