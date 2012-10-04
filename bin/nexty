@@ -1,5 +1,25 @@
 #!/usr/bin/env ruby
 
+class String
+  def starts_with?(pattern)
+    ! self.match(/^#{pattern}/).nil?
+  end
+end
+
+class Numeric
+  def duration
+    secs  = self.to_int
+    mins  = secs / 60
+    hours = mins / 60
+    days  = hours / 24
+
+    return "#{days} days and #{hours % 24} hours" if days > 0
+    return "#{hours} hours and #{mins % 60} minutes" if days == 0 and hours > 0
+    return "#{mins} minutes and #{secs % 60} seconds" if days == 0 and hours == 0 and mins > 0
+    return "#{secs} seconds" if days == 0 and hours == 0 and mins == 0
+  end
+end
+
 if RUBY_VERSION.split('.')[1] == "8"
 require 'rubygems'
 end
@@ -9,15 +29,25 @@ require 'rainbow'
 require 'nexpose'
 require 'nexty'
 require 'getoptlong'
+require 'csv'
 
 opts = GetoptLong.new(
   [ '--report', '-r', GetoptLong::REQUIRED_ARGUMENT ],
-  [ '--host', '-H', GetoptLong::REQUIRED_ARGUMENT ]
+  [ '--host', '-H', GetoptLong::REQUIRED_ARGUMENT ], 
+  [ '--full-export', '-f', GetoptLong::REQUIRED_ARGUMENT ],
+  [ '--download', '-d', GetoptLong::REQUIRED_ARGUMENT ]
 )
 
 
 
 trap("INT") { puts '['+'INTERRUPTED'.color(:red)+']'; exit -1 }
+
+
+# templates = nsc.report_template_listing
+# 
+# templates.each do |template|
+#   p template[:template_id]
+# end
 
 conn = Nexty::Connector.new
 nsc = conn.nsc
@@ -32,12 +62,38 @@ rescue ::Nexpose::APIError => e
 end
 printf "succeded\n".color(:green)
 
+
 opts.each do |opt, arg|
   case opt
+
+  when '--download'
+
+    file_name = "export_#{Time.now.strftime("%Y%m%d%H%M%s")}.csv"
+    puts "Report saved: #{Nexty::Report.download(arg, file_name, nsc)}".color(:white)
+
+  when '--full-export'
+   
+    fn = Nexty::Report.generate_from_a_template(arg, nsc)
+    file_name = "export_#{Time.now.strftime("%Y%m%d%H%M%s")}.csv"
+    nsc.logout
+    begin 
+      printf "Connecting to #{conn.config["config"]["host"]}:#{conn.config["config"]["port"]} - ".color(:white)
+      nsc.login
+    rescue ::Nexpose::APIError => e
+      printf "failed\n".color(:red)
+      $stderr.puts("#{e.reason}")
+      exit(1)
+    end
+    printf "succeded\n".color(:green)
+
+    puts "Report saved: #{Nexty::Report.download(fn, file_name, nsc)}".color(:white)
+
   when '--report'
-    fn = Nexty::Report.generate_and_save(arg, nsc)
+    fn = Nexty::Report.generate_from_a_list_of_sites(arg, nsc)
     puts "Report saved: #{fn}".color(:white)
+
   when '--host'
+
     dev= Nexty::Device.find_by_address(nsc, arg)
     if ! dev.nil? 
       puts "#{dev.address} found @ site #{dev.site_id}. Risk score = #{dev.riskscore} * #{dev.riskfactor}".color(:green)
@@ -47,13 +103,5 @@ opts.each do |opt, arg|
   end
 end
 
-    #begin
-    #  file = File.open("#{site[:name]}_#{Time.now.strftime("%Y%m%d%H%M%s")}.csv", "w")
-    #  file.write(report.generate)
-    #  file.close
-    #rescue REXML::ParseException => e
-    #  puts "#{e.message}".color(:red)
 
 nsc.logout
-# stat = nsc.scan_statistics("218")
-# puts stat[:vulns]
