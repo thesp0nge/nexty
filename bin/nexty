@@ -34,6 +34,7 @@ require 'csv'
 opts = GetoptLong.new(
   [ '--report', '-r', GetoptLong::REQUIRED_ARGUMENT ],
   [ '--host', '-H', GetoptLong::REQUIRED_ARGUMENT ], 
+  [ '--bulk-load', '-l', GetoptLong::NO_ARGUMENT ],
   [ '--full-export', '-f', GetoptLong::REQUIRED_ARGUMENT ],
   [ '--download', '-d', GetoptLong::REQUIRED_ARGUMENT ]
 )
@@ -62,9 +63,13 @@ rescue ::Nexpose::APIError => e
 end
 printf "succeded\n".color(:green)
 
+bulk_load = false
 
 opts.each do |opt, arg|
   case opt
+
+  when '--bulk-load' 
+    bulk_load = true
 
   when '--download'
 
@@ -72,7 +77,7 @@ opts.each do |opt, arg|
     puts "Report saved: #{Nexty::Report.download(arg, file_name, nsc)}".color(:white)
 
   when '--full-export'
-   
+
     fn = Nexty::Report.generate_from_a_template(arg, nsc)
     file_name = "export_#{Time.now.strftime("%Y%m%d%H%M%s")}.csv"
     nsc.logout
@@ -94,11 +99,27 @@ opts.each do |opt, arg|
 
   when '--host'
 
-    dev= Nexty::Device.find_by_address(nsc, arg)
-    if ! dev.nil? 
-      puts "#{dev.address} found @ site #{dev.site_id}. Risk score = #{dev.riskscore} * #{dev.riskfactor}".color(:green)
+    if ! bulk_load
+      dev= Nexty::Device.find_by_address(nsc, arg)
+      if ! dev.nil? 
+        puts "#{dev.address} found @ site #{dev.site_id}. Risk score = #{dev.riskscore} * #{dev.riskfactor}".color(:green)
+      else
+        puts "#{arg} not found".color(:red)
+      end
     else
-      puts "#{arg} not found".color{:red}
+      lines = []
+
+      lines = File.open(arg).readlines if File.exists?(arg)
+      puts "#{lines.count} hosts read from #{arg}".color(:white)
+
+      lines.each do |l|
+        dev= Nexty::Device.find_by_address(nsc, l.chomp)
+        if ! dev.nil? 
+          puts "#{dev.address} found @ site #{dev.site_id}. Risk score = #{dev.riskscore} * #{dev.riskfactor}".color(:green)
+        else
+          puts "#{l.chomp} not found".color(:red)
+        end
+      end
     end
   end
 end

@@ -1,5 +1,7 @@
 module Nexty
   class Device
+    attr_reader :devices
+
     def self.all(connection)
       @devices = []
 
@@ -16,8 +18,9 @@ module Nexty
     end
 
     def self.find_by_address(connection, address)
-      devices = Nexty::Device.all(connection)
-      devices.each do |d|
+      @devices = Nexty::Device.all(connection) if @devices.nil? or @devices.empty?
+
+      @devices.each do |d|
         if d.address == address
           return d
         end
