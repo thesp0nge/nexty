@@ -1,3 +1,3 @@
 module Nexty
-  VERSION = "0.20"
+  VERSION = "0.30"
 end
