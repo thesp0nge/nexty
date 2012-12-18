@@ -4,3 +4,6 @@ config:
   user: "nxadmin"
   pass: "nxadmin"
 
+report:
+  template: "sample"
+

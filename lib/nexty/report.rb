@@ -64,13 +64,13 @@ module Nexty
       result[:url]
     end
 
-    def self.generate_from_a_list_of_sites(site_list=nil, nsc)
-      sites=Nexty::Sites.load_from_file(site_list)
+    def self.generate_from_a_list_of_sites(options={}, nsc)
+      sites=Nexty::Sites.load_from_file(options[:site_list])
       s = []
       sites.each do |site|
         s << nsc.find_site_by_name(site) 
       end
-      result = Nexty::Report.generate(nsc, s, {:template=>"template-per-vulnerability-meeting", :format=>'csv', :filename=>nil, :scan_to_include=>4})
+      result = Nexty::Report.generate(nsc, s, {:template=>options[:template],  :format=>'csv', :filename=>nil, :scan_to_include=>4})
       Nexty::Report.download(result[:url], result[:filename], nsc)
     end
   end

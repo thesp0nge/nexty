@@ -94,7 +94,7 @@ opts.each do |opt, arg|
     puts "Report saved: #{Nexty::Report.download(fn, file_name, nsc)}".color(:white)
 
   when '--report'
-    fn = Nexty::Report.generate_from_a_list_of_sites(arg, nsc)
+    fn = Nexty::Report.generate_from_a_list_of_sites({:site_list=>arg, :template=>conn.config["report"]["template"]}, nsc)
     puts "Report saved: #{fn}".color(:white)
 
   when '--host'
