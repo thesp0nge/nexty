@@ -30,15 +30,18 @@ require 'nexpose'
 require 'nexty'
 require 'getoptlong'
 require 'csv'
+require 'time'
 
 opts = GetoptLong.new(
   [ '--report', '-r', GetoptLong::REQUIRED_ARGUMENT ],
   [ '--host', '-H', GetoptLong::REQUIRED_ARGUMENT ], 
   [ '--bulk-load', '-l', GetoptLong::NO_ARGUMENT ],
   [ '--full-export', '-f', GetoptLong::REQUIRED_ARGUMENT ],
-  [ '--download', '-d', GetoptLong::REQUIRED_ARGUMENT ]
+  [ '--download', '-d', GetoptLong::REQUIRED_ARGUMENT ], 
+  [ '--schedule', '-s', GetoptLong::OPTIONAL_ARGUMENT ]
 )
 
+include Nexpose
 
 
 trap("INT") { puts '['+'INTERRUPTED'.color(:red)+']'; exit -1 }
@@ -67,7 +70,36 @@ bulk_load = false
 
 opts.each do |opt, arg|
   case opt
+  when '--schedule'
+     # site.schedules
 
+     sites = nsc.find_site_by_name(arg) unless arg.empty?
+     sites = nsc.site_listing if arg.empty? 
+     puts "site, type, interval, day of week, start, scan executed, mean scan time, enabled, forced"
+     sites.each do |site|
+       s = Site.load(nsc, site[:site_id])
+       history = nsc.site_scan_history(site[:site_id])
+
+       elapse = 0 
+       items = 0
+
+       history.each do |h|
+         t0 = Time.parse(h[:start_time])
+         t1 = Time.parse(h[:end_time])
+         elapse += (t1-t0)
+         items += 1
+       end
+
+       forced = false
+       
+       s.schedules.each do |schedule|
+         t = Time.parse(schedule.start)
+         puts t.wday
+         forced = true if t.hour >= 21
+         puts "#{site[:name]},#{schedule.type},#{schedule.interval}, #{t.wday}, #{t.hour}:#{t.min}:#{t.sec}, #{history.size}, #{(elapse) / (3600.0 * items)}, #{schedule.enabled}, #{forced}"
+       end
+
+     end
   when '--bulk-load' 
     bulk_load = true
 
